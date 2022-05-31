@@ -4,7 +4,7 @@ import path from "node:path";
 import { nunjucks } from "./config/nunjucks";
 import { auth } from "./config/auth";
 
-export const app = express();
+export const app: Application = express();
 const port = process.env.NODE_PORT || 3000;
 
 (async () => {
@@ -18,7 +18,14 @@ const port = process.env.NODE_PORT || 3000;
   app.use(cookieParser());
 
   // Configure OpenID Connect Authentication middleware
-  app.use(await auth());
+  app.use(
+    await auth({
+      clientId: process.env.OIDC_CLIENT_ID,
+      privateKey: process.env.OIDC_PRIVATE_KEY,
+      discoveryEndpoint: process.env.OIDC_ISSUER_DISCOVERY_ENDPOINT,
+      redirectUri: process.env.OIDC_REDIRECT_URI,
+    })
+  );
 
   // Application Routes
   app.get("/", (req: Request, res: Response) => {

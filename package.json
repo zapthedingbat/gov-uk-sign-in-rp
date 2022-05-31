@@ -7,7 +7,7 @@
   "scripts": {
     "build": "npx ts-node -r dotenv/config ./scripts/build.ts",
     "start": "node dist/index.js",
-    "dev": "nodemon"
+    "dev": "nodemon --exec \"npx ts-node -r dotenv/config ./src/index.ts\""
   },
   "engines": {
     "npm": ">=7.0.0",

@@ -9,10 +9,6 @@ export function nunjucks(app: Application, viewsPath: string): void {
     // Don't cache in development mode so we can make changes to templates without restarting the server
     noCache: isDevelopment,
   };
-
   const viewPaths = [viewsPath, "node_modules/govuk-frontend/"];
-
-  console.log("viewPaths", viewPaths);
-
   configure(viewPaths, configureOptions);
 }
