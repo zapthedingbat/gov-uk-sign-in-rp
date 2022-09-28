@@ -1,4 +1,4 @@
-import express, { Application, Request, Response } from "express";
+import express, { Application, NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import path from "node:path";
 import { nunjucks } from "./config/nunjucks";
@@ -24,12 +24,22 @@ const port = process.env.NODE_PORT || 3000;
       privateKey: process.env.OIDC_PRIVATE_KEY,
       discoveryEndpoint: process.env.OIDC_ISSUER_DISCOVERY_ENDPOINT,
       redirectUri: process.env.OIDC_REDIRECT_URI,
+      identityVerificationPublicKey: process.env.IV_PUBLIC_KEY
     })
   );
 
-  // Application Routes
+  // Application routes
   app.get("/", (req: Request, res: Response) => {
     res.render("home.njk");
+  });
+
+  // Generic error handler
+  app.use((err: Error, req: Request, res: Response, _next: NextFunction) => {
+    res.render("error.njk", {
+      name: err.name,
+      message: err.message,
+      stack: err.stack
+    });
   });
 
   const server = await app.listen(port);

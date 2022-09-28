@@ -7,5 +7,6 @@ declare namespace NodeJS {
     OIDC_AUTHORIZE_REDIRECT_URI: string;
     OIDC_CALLBACK_REDIRECT_URI: string;
     OIDC_REDIRECT_URI: string;
+    IV_PUBLIC_KEY: string;
   }
 }

@@ -1,5 +1,6 @@
-import { createPrivateKey, createHash } from "node:crypto";
-import { Request, Response, Router } from "express";
+import { createPrivateKey, createHash, createPublicKey } from "node:crypto";
+import { NextFunction, Request, Response, Router } from "express";
+import { jwtVerify } from "jose";
 import {
   Client,
   ClientMetadata,
@@ -7,6 +8,7 @@ import {
   generators,
   IssuerMetadata,
 } from "openid-client";
+import asyncHandler from "../async-handler";
 
 type AuthMiddlewareConfiguration = {
   clientId: string;
@@ -15,6 +17,7 @@ type AuthMiddlewareConfiguration = {
   redirectUri?: string;
   authorizeRedirectUri?: string;
   callbackRedirectUri?: string;
+  identityVerificationPublicKey?: string;
 } & (
   | {
       issuerMetadata: IssuerMetadata;
@@ -25,10 +28,25 @@ type AuthMiddlewareConfiguration = {
     }
 );
 
+type IdentityCheckCredential = {
+  credentialSubject: {
+    name: Array<any>,
+    birthDate: Array<any>
+  }
+}
+
+enum Claims {
+  CoreIdentity = "https://vocab.account.gov.uk/v1/coreIdentityJWT"
+}
+
+type GovUkOneLoginUserInfo = {
+  [Claims.CoreIdentity]: any
+}
+
 const STATE_COOKIE_NAME = "state";
 const NONCE_COOKIE_NAME = "nonce";
 
-function parseJwk(privateKey: string) {
+function readPrivateKey(privateKey: string) {
   return createPrivateKey({
     key: Buffer.from(privateKey, "base64"),
     type: "pkcs8",
@@ -36,6 +54,11 @@ function parseJwk(privateKey: string) {
   }).export({
     format: "jwk",
   }) as any;
+}
+
+function readPublicKey(publicKey: string) {
+  const armouredKey = `-----BEGIN PUBLIC KEY-----\n${publicKey}\n-----END PUBLIC KEY-----`;
+  return createPublicKey(armouredKey);
 }
 
 function hash(value: string) {
@@ -80,10 +103,11 @@ function createClient(
   );
 
   // Private key is required for signing token exchange
-  const jwk = parseJwk(configuration.privateKey);
+  const jwk = readPrivateKey(configuration.privateKey);
   const client = new issuer.Client(clientMetadata, {
     keys: [jwk],
   });
+
   return client;
 }
 
@@ -107,10 +131,13 @@ export async function auth(configuration: AuthMiddlewareConfiguration) {
     const authorizationUrl = client.authorizationUrl({
       redirect_uri: redirectUri,
       response_type: "code",
-      scope: "openid email phone",
+      scope: "openid email phone offline_access",
       state: hash(state),
       nonce: hash(nonce),
+      vtr: `["P2.Cl.Cm"]`, //Q: Confirm if the order and case is important
+      claims: JSON.stringify({"userinfo":{[Claims.CoreIdentity]:{"essential":true}}})
     });
+
     // Store the nonce and state in a session cookie so it can be checked in callback
     res.cookie(NONCE_COOKIE_NAME, nonce, {
       httpOnly: true,
@@ -118,12 +145,21 @@ export async function auth(configuration: AuthMiddlewareConfiguration) {
     res.cookie(STATE_COOKIE_NAME, state, {
       httpOnly: true,
     });
+
     // Redirect to the authorization server
     res.redirect(authorizationUrl);
   });
 
   // Callback receives the code and state from the authorization server
-  router.get("/oauth/callback", async (req: Request, res: Response) => {
+  router.get("/oauth/callback", asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+
+    // Check for an error
+    if (req.query["error"]) {
+      throw new Error(
+        `${req.query.error} - ${req.query.error_description}`
+      );
+    }
+
     // Get all the parameters to pass to the token exchange endpoint
     const redirectUri =
       configuration.callbackRedirectUri ||
@@ -139,16 +175,60 @@ export async function auth(configuration: AuthMiddlewareConfiguration) {
       state: hash(state),
       nonce: hash(nonce),
     });
+
     if (!tokenSet.access_token) {
       throw new Error("No access token received");
     }
 
     // Use the access token to authenticate the call to userinfo
-    const userinfo = await client.userinfo(tokenSet.access_token);
+    // Note: This is an HTTP GET to https://oidc.integration.account.gov.uk/userinfo
+    // with the "Authorization: Bearer ${accessToken}` header
+    const userinfo = await client.userinfo<GovUkOneLoginUserInfo>(tokenSet.access_token);
 
-    // Display the results from userinfo
-    res.render("migrate.njk", userinfo);
-  });
+    /*
+    Example userinfo
+    {
+      sub: 'urn:fdc:gov.uk:2022:EULgSHCO71iLMwX8lUiHUqbONoUR_E46WCBpzhIrdTE',
+      email_verified: true,
+      phone_number_verified: true,
+      phone_number: '+447012345678',
+      'https://vocab.account.gov.uk/v1/coreIdentityJWT': 'eyJhbGciOiJFUzI1NiJ9.eyJzdWIiOiJ1cm46ZmRjOmdvdi51azoyMDIyOkVVTGdTSENPNzFpTE13WDhsVWlIVXFiT05vVVJfRTQ2V0NCcHpoSXJkVEUiLCJuYmYiOjE2NjQzNTU1NjMsImlzcyI6ImlkZW50aXR5LmludGVncmF0aW9uLmFjY291bnQuZ292LnVrIiwidm90IjoiUDIiLCJleHAiOjE2NjQzNTczNjMsImlhdCI6MTY2NDM1NTU2MywidmMiOnsiY3JlZGVudGlhbFN1YmplY3QiOnsibmFtZSI6W3sidmFsaWRVbnRpbCI6bnVsbCwibmFtZVBhcnRzIjpbeyJ0eXBlIjoiR2l2ZW5OYW1lIiwidmFsdWUiOiJLZW5uZXRoIn0seyJ0eXBlIjoiRmFtaWx5TmFtZSIsInZhbHVlIjoiRGVjZXJxdWVpcmEifV0sInZhbGlkRnJvbSI6bnVsbH1dLCJiaXJ0aERhdGUiOlt7InZhbHVlIjoiMTk1OS0wOC0yMyJ9XX0sImNvbnRleHRMaXN0IjpudWxsLCJ0eXBlIjpbIlZlcmlmaWFibGVDcmVkZW50aWFsIiwiSWRlbnRpdHlDaGVja0NyZWRlbnRpYWwiXX0sInZ0bSI6Imh0dHBzOlwvXC9vaWRjLmludGVncmF0aW9uLmFjY291bnQuZ292LnVrXC90cnVzdG1hcmsifQ.ph_03XfQ_3EZDUSd_kFHEwkazfYg6VbQJYMSkDwS7SqTDuJwV0QL-GnXihFyc1s9WOfIyeyDRDH6_bOJK5K3ag',
+      email: 'user@example.com'
+    }
+    */
+
+    let identityCheckCredential: IdentityCheckCredential | null = null;
+
+    // The core identity claim is present.
+    // If the core identity claim is not present GOV.UK One Login
+    // was not able to prove your user’s identity or the claim
+    // wasn't requested.
+    if(Claims.CoreIdentity in userinfo){
+
+      // Read the resulting core identity claim
+      // See: https://auth-tech-docs.london.cloudapps.digital/integrate-with-integration-environment/process-identity-information/#process-your-user-s-identity-information
+      const coreIdentityJWT = Reflect.get(userinfo, Claims.CoreIdentity);
+      
+      // Check the validity of the claim using the public key
+      const publicKey = readPublicKey(configuration.identityVerificationPublicKey!);
+      const { payload } = await jwtVerify(coreIdentityJWT, publicKey, {
+        issuer: "identity.integration.account.gov.uk"
+      });
+
+      // Check the Vector of Trust (vot) to ensure the expected level of confidence was achieved.
+      if(payload.vot !== "P2"){
+        throw new Error("Expected level of confidence was not achieved.");
+      }
+
+      identityCheckCredential = payload.vc as IdentityCheckCredential;
+    } 
+
+    res.render("migrate.njk", {
+      userinfo,
+      identityCheckCredential,
+    });
+
+  }));
 
   return router;
 }

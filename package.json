@@ -31,6 +31,7 @@
     "cookie-parser": "^1.4.6",
     "express": "^4.18.0",
     "govuk-frontend": "^4.0.1",
+    "jose": "^4.9.3",
     "nunjucks": "^3.2.3",
     "openid-client": "^5.1.5"
   }
