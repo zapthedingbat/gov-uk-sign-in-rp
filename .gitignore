@@ -5,3 +5,4 @@
 *.pem
 *.jwk
 /automation/TestData.ts
+/automation/.screenshots/

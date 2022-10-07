@@ -4,6 +4,7 @@ import { PageBase } from "./PageBase";
 
 export class GovUkOneLoginPage extends PageBase {
 
+
   constructor(driver: ThenableWebDriver) {
     super(driver);
   }

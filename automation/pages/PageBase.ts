@@ -8,6 +8,10 @@ export abstract class PageBase {
     
   }
 
+  public async setSize(width: number, height: number): Promise<void> {
+    await this.driver.manage().window().setRect({x: 0, y: 0, width: width, height: height});
+  }
+
   public async navigateTo(url: string): Promise<void>{
     await this.driver.navigate().to(url);
   }
@@ -54,5 +58,4 @@ export abstract class PageBase {
       await option.click();
     }
   }
-
 }
