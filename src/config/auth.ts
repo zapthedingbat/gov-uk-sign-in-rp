@@ -98,7 +98,7 @@ async function getResult(
     accessToken,
     refreshToken,
     idToken,
-    userinfo,
+    userinfo: JSON.stringify(userinfo, null, 2),
     coreIdentity,
   };
 }
@@ -158,9 +158,6 @@ export async function auth(configuration: AuthMiddlewareConfiguration) {
     
     // Construct the url and redirect on to the authorization endpoint
     const authorizationUrl = client.authorizationUrl(authorizationParameters);
-
-    console.log("authorizationParameters", authorizationParameters);
-    console.log("authorizationUrl", authorizationUrl);
 
     // Redirect to the authorization server
     res.redirect(authorizationUrl);

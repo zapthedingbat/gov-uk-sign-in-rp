@@ -35,10 +35,7 @@ export class GovUkOneLoginPage extends PageBase {
             const min = Number.parseFloat((match[1] || "0").replace(/,/ig, ""));
             const max = Number.parseFloat(match[2].replace(/,/ig, ""));
             if (answer <= max && answer >= min) {
-              console.log("Matched answer", {min, max, answer});
               return true;
-            } else {
-              console.log("Unmatched answer", {min, max, answer});
             }
           }
         }
@@ -48,8 +45,6 @@ export class GovUkOneLoginPage extends PageBase {
 
     if (answerRadio instanceof WebElement) {
       answerRadio.click();
-    } else {
-      console.log("No matching answer", answer);
     }
   }
 
