@@ -22,3 +22,12 @@ docker build -t gov-uk-sign-in-rp .
 ```
 docker run -it --init -e OIDC_PRIVATE_KEY=<Your Private Key> -e OIDC_CLIENT_ID=<Your Client ID> -p 3000:8080 gov-uk-sign-in-rp
 ```
+
+## Automation
+
+A basic automation script that exercises the complete identity verification journey can be run.
+You'll need to populate valid values in /automation/TestData.ts for this to succeed.
+
+```
+npm run auto
+```
