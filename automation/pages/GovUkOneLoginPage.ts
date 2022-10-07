@@ -1,4 +1,4 @@
-import { By, ThenableWebDriver, WebElement } from "selenium-webdriver";
+import { By, ThenableWebDriver, until, WebElement,WebElementCondition } from "selenium-webdriver";
 import { findWebElement } from "../web-elements";
 import { PageBase } from "./PageBase";
 
@@ -8,6 +8,11 @@ export class GovUkOneLoginPage extends PageBase {
     super(driver);
   }
   
+  async rejectCookies(){
+    await this.clickOn("button[name='cookiesReject']");
+    await this.clickOn("#cookies-rejected a.cookie-hide-button");
+  }
+
   async answerKbvQuestion(answers: { [questionId: string]: number | string }) {
     const fieldset = await this.driver.findElement(
       By.css("form[action='/kbv/question'] fieldset.govuk-fieldset")
@@ -17,8 +22,8 @@ export class GovUkOneLoginPage extends PageBase {
     const answer = answers[questionId];
     const answerRadios = await fieldset.findElements(By.name(questionId));
 
-    // Rind the radio input that matches the answer
-    const answerRadio = await findWebElement(
+    // Find the radio input that matches the answer
+    let answerRadio = await findWebElement(
       answerRadios,
       async (radio: WebElement) => {
         const value = await radio.getAttribute("value");
@@ -42,10 +47,21 @@ export class GovUkOneLoginPage extends PageBase {
         return false;
       }
     );
-
     if (answerRadio instanceof WebElement) {
-      answerRadio.click();
+      await answerRadio.click();
+      return;
     }
+
+    answerRadio = await findWebElement(answerRadios, async (radio: WebElement) => {
+      const value = await radio.getAttribute("value");
+      return value.startsWith("NONE OF THE ABOVE");
+    });
+    if (answerRadio instanceof WebElement) {
+      await answerRadio.click();
+      return
+    }
+
+
   }
 
   async waitToLeaveIpvCallback() {

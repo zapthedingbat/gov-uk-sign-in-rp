@@ -3,16 +3,20 @@ import { Builder, ThenableWebDriver } from "selenium-webdriver";
 import { generateToken } from "./totp";
 import { GovUkOneLoginPage } from "./pages/GovUkOneLoginPage";
 import { TestData } from "./TestData";
+import { Options } from "selenium-webdriver/chrome";
 
 (async () => {
 
-  const driver: ThenableWebDriver = new Builder().forBrowser("chrome").build();
+  const options = new Options().detachDriver(true);
+  const driver: ThenableWebDriver = new Builder().forBrowser("chrome").setChromeOptions(options).build();
 
   const page = new GovUkOneLoginPage(driver);
   
   await page.navigateTo("http://localhost:3001/");
   await page.clickOn("a[href='/oauth/login']");
   await page.authenticate("integration-user", "winter2021");
+
+  await page.rejectCookies();
 
   await page.clickOn("input[value='sign-in']");
   await page.clickOn("button[type='Submit']");
