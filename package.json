@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@tsconfig/node16": "^1.0.2",
+    "@tsconfig/node16": "1.0.3",
     "@types/chromedriver": "^81.0.1",
     "@types/cookie-parser": "^1.4.3",
     "@types/express": "^4.17.13",
