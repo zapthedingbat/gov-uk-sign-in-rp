@@ -1,11 +1,16 @@
-import { By, ThenableWebDriver as Driver, WebElement } from "selenium-webdriver"
-import { findWebElement } from "../web-elements";
+import { By, Locator, ThenableWebDriver as Driver, WebElement } from "selenium-webdriver"
+import { everyWebElement, findWebElement } from "../web-elements";
 
 export abstract class PageBase {
   protected constructor(
     protected driver: Driver
   ) {
     
+  }
+
+  public async isVisible(selector: string) {
+    const elements = await this.driver.findElements(By.css(selector));
+    return await everyWebElement(elements, async (element) => element.isDisplayed());
   }
 
   public async setSize(width: number, height: number): Promise<void> {

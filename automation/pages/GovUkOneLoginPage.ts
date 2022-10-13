@@ -10,8 +10,11 @@ export class GovUkOneLoginPage extends PageBase {
   }
   
   async rejectCookies(){
-    await this.clickOn("button[name='cookiesReject']");
-    await this.clickOn("#cookies-rejected a.cookie-hide-button");
+    const cookiesRejectButtonSelector = "button[name='cookiesReject']";
+    if(await this.isVisible(cookiesRejectButtonSelector)){
+      await this.clickOn(cookiesRejectButtonSelector);
+      await this.clickOn("#cookies-rejected a.cookie-hide-button");
+    }
   }
 
   async answerKbvQuestion(answers: { [questionId: string]: number | string }) {
