@@ -39,6 +39,6 @@
     "hi-base32": "^0.5.1",
     "jose": "^4.9.3",
     "nunjucks": "^3.2.3",
-    "openid-client": "^5.1.5"
+    "openid-client": "5.2.1"
   }
 }
