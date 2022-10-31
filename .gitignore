@@ -6,3 +6,4 @@
 *.jwk
 /automation/TestData.ts
 /automation/.screenshots/
+.vscode

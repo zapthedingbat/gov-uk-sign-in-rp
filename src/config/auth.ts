@@ -36,7 +36,7 @@ const CLAIMS = {
 };
 
 // Issuer that is must have issued identity claims.
-const ISSUER = "identity.integration.account.gov.uk";
+const ISSUER = "https://identity.integration.account.gov.uk/";
 
 const STATE_COOKIE_NAME = "state";
 const NONCE_COOKIE_NAME = "nonce";
