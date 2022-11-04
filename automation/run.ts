@@ -36,8 +36,12 @@ async function runIvJourney(page: GovUkOneLoginPage, onPageChange: () => Promise
   await page.clickOn("button[name='submitButton']");
 
   await onPageChange();
-  await page.clickOn("input[type='radio'][name='select-option'][value='no']");
-  await page.clickOn("button[type='Submit']");
+  await page.clickOn("input[type='radio'][name='select-device-choice'][value='computerOrTablet']");
+  await page.clickOn("button[type='submit']");
+
+  await onPageChange();
+  await page.clickOn("input[type='radio'][name='smartphone-choice'][value='other']");
+  await page.clickOn("button[type='submit']");
 
   await onPageChange();
   await page.clickOn("input[type='radio'][name='journey'][value='next']");
@@ -100,7 +104,7 @@ async function runIvJourney(page: GovUkOneLoginPage, onPageChange: () => Promise
 
   // Run headless and record screenshots
   const options = new Options()
-  .headless()
+  //.headless()
   .windowSize({
     height: 1800,
     width: 1024
@@ -123,12 +127,12 @@ async function runIvJourney(page: GovUkOneLoginPage, onPageChange: () => Promise
     await takeScreenshot();
   });
   
-  // Run the journey again
-  await page.navigateTo("http://localhost:3001/");
-  await page.clickOn("a[href='/oauth/login']");
-  await runIvJourney(page, async () => {
-    await takeScreenshot();
-  });
+  // // Run the journey again
+  // await page.navigateTo("http://localhost:3001/");
+  // await page.clickOn("a[href='/oauth/login']");
+  // await runIvJourney(page, async () => {
+  //   await takeScreenshot();
+  // });
 
   //await driver.quit();
 
